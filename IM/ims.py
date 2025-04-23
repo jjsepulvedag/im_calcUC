@@ -17,7 +17,8 @@ import pandas as pd
 import scipy as sp
 import xarray as xr
 
-from IM import ko_matrices
+from im_calcUC.IM import ko_matrices
+# from IM import ko_matrices
 
 
 class Component(IntEnum):
@@ -767,28 +768,22 @@ def cumulative_absolute_velocity(
         DataFrame containing CAV values (m/s) with rotated components.
     """
 
-    comp_0 = waveform[:, :, Component.COMP_0]
-    comp_90 = waveform[:, :, Component.COMP_90]
-    comp_ver = waveform[:, :, Component.COMP_VER]
+    # comp_0 = waveform[:, :, Component.COMP_0]
+    # comp_90 = waveform[:, :, Component.COMP_90]
+    # comp_ver = waveform[:, :, Component.COMP_VER]
 
-    if threshold:
-        g = 981
-        comp_0 = np.where(np.abs(comp_0) < threshold / g, np.float32(0), comp_0)
-        comp_90 = np.where(np.abs(comp_90) < threshold / g, np.float32(0), comp_90)
-        comp_ver = np.where(np.abs(comp_ver) < threshold / g, np.float32(0), comp_ver)
+    # if threshold:
+    #     g = 981
+    #     comp_0 = np.where(np.abs(comp_0) < threshold / g, np.float32(0), comp_0)
+    #     comp_90 = np.where(np.abs(comp_90) < threshold / g, np.float32(0), comp_90)
+    #     comp_ver = np.where(np.abs(comp_ver) < threshold / g, np.float32(0), comp_ver)
 
-    comp_0_cav = _cumulative_absolute_velocity(comp_0, dt)
-    comp_90_cav = _cumulative_absolute_velocity(comp_90, dt)
-    comp_ver_cav = _cumulative_absolute_velocity(comp_ver, dt)
+    # comp_0_cav = _cumulative_absolute_velocity(comp_0, dt)
+    # comp_90_cav = _cumulative_absolute_velocity(comp_90, dt)
+    # comp_ver_cav = _cumulative_absolute_velocity(comp_ver, dt)
 
-    return pd.DataFrame(
-        {
-            "000": comp_0_cav,
-            "090": comp_90_cav,
-            "ver": comp_ver_cav,
-            "geom": np.sqrt(comp_0_cav * comp_90_cav),
-        }
-    )
+    return compute_intensity_measure_rotd(waveform, lambda v: _cumulative_absolute_velocity(v, dt))
+
 
 
 def arias_intensity(waveform: npt.NDArray[np.float32], dt: float) -> pd.DataFrame:
@@ -807,18 +802,9 @@ def arias_intensity(waveform: npt.NDArray[np.float32], dt: float) -> pd.DataFram
         DataFrame containing Arias Intensity values (m/s). The 'geom' component
         is the geometric mean of the 000 and 090 components.
     """
-    arias_intensity_0 = _arias_intensity(waveform[:, :, Component.COMP_0.value], dt)
-    arias_intensity_90 = _arias_intensity(waveform[:, :, Component.COMP_90.value], dt)
-    arias_intensity_ver = _arias_intensity(waveform[:, :, Component.COMP_VER.value], dt)
 
-    return pd.DataFrame(
-        {
-            "000": arias_intensity_0,
-            "090": arias_intensity_90,
-            "ver": arias_intensity_ver,
-            "geom": np.sqrt(arias_intensity_0 * arias_intensity_90),
-        }
-    )
+    return compute_intensity_measure_rotd(waveform, lambda v: _arias_intensity(v, dt))
+
 
 
 def ds575(waveform: npt.NDArray[np.float32], dt: float, use_numexpr: bool = True) -> pd.DataFrame:
@@ -838,24 +824,26 @@ def ds575(waveform: npt.NDArray[np.float32], dt: float, use_numexpr: bool = True
     pandas.DataFrame with columns `['000', '090', 'ver', 'geom', 'rotd100', 'rotd50', 'rotd0']`
         DataFrame containing DS575 values (in seconds) with rotated components.
     """
-    significant_duration_0 = significant_duration(
-        waveform[:, :, Component.COMP_0.value], dt, 5, 75, use_numexpr
-    )
-    significant_duration_90 = significant_duration(
-        waveform[:, :, Component.COMP_90.value], dt, 5, 75, use_numexpr
-    )
-    significant_duration_ver = significant_duration(
-        waveform[:, :, Component.COMP_VER.value], dt, 5, 75, use_numexpr
-    )
+    # significant_duration_0 = significant_duration(
+    #     waveform[:, :, Component.COMP_0.value], dt, 5, 75, use_numexpr
+    # )
+    # significant_duration_90 = significant_duration(
+    #     waveform[:, :, Component.COMP_90.value], dt, 5, 75, use_numexpr
+    # )
+    # significant_duration_ver = significant_duration(
+    #     waveform[:, :, Component.COMP_VER.value], dt, 5, 75, use_numexpr
+    # )
 
-    return pd.DataFrame(
-        {
-            "000": significant_duration_0,
-            "090": significant_duration_90,
-            "ver": significant_duration_ver,
-            "geom": np.sqrt(significant_duration_0 * significant_duration_90),
-        }
-    )
+    return compute_intensity_measure_rotd(waveform, lambda v: significant_duration(v, dt, 5, 75, use_numexpr))
+
+    # return pd.DataFrame(
+    #     {
+    #         "000": significant_duration_0,
+    #         "090": significant_duration_90,
+    #         "ver": significant_duration_ver,
+    #         "geom": np.sqrt(significant_duration_0 * significant_duration_90),
+    #     }
+    # )
 
 
 def ds595(waveform: npt.NDArray[np.float32], dt: float, use_numexpr: bool = True) -> pd.DataFrame:
@@ -875,21 +863,23 @@ def ds595(waveform: npt.NDArray[np.float32], dt: float, use_numexpr: bool = True
     pandas.DataFrame with columns `['000', '090', 'ver', 'geom', 'rotd100', 'rotd50', 'rotd0']`
         DataFrame containing DS595 values (in seconds) with rotated components.
     """
-    significant_duration_0 = significant_duration(
-        waveform[:, :, Component.COMP_0.value], dt, 5, 95, use_numexpr
-    )
-    significant_duration_90 = significant_duration(
-        waveform[:, :, Component.COMP_90.value], dt, 5, 95, use_numexpr
-    )
-    significant_duration_ver = significant_duration(
-        waveform[:, :, Component.COMP_VER.value], dt, 5, 95, use_numexpr
-    )
+    # significant_duration_0 = significant_duration(
+    #     waveform[:, :, Component.COMP_0.value], dt, 5, 95, use_numexpr
+    # )
+    # significant_duration_90 = significant_duration(
+    #     waveform[:, :, Component.COMP_90.value], dt, 5, 95, use_numexpr
+    # )
+    # significant_duration_ver = significant_duration(
+    #     waveform[:, :, Component.COMP_VER.value], dt, 5, 95, use_numexpr
+    # )
 
-    return pd.DataFrame(
-        {
-            "000": significant_duration_0,
-            "090": significant_duration_90,
-            "ver": significant_duration_ver,
-            "geom": np.sqrt(significant_duration_0 * significant_duration_90),
-        }
-    )
+    return compute_intensity_measure_rotd(waveform, lambda v: significant_duration(v, dt, 5, 95, use_numexpr))
+
+    # return pd.DataFrame(
+    #     {
+    #         "000": significant_duration_0,
+    #         "090": significant_duration_90,
+    #         "ver": significant_duration_ver,
+    #         "geom": np.sqrt(significant_duration_0 * significant_duration_90),
+    #     }
+    # )

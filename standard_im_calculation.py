@@ -4,8 +4,9 @@ import pandas as pd
 from numpy.testing import assert_array_almost_equal
 
 from IM import im_calculation, waveform_reading
+from IM.ims import IM
 
-data_dir = Path(__file__).parent / "resources"
+data_dir = Path(__file__).parent / "examples/resources"
 
 comp_000_ffp = data_dir / "2024p950420_MWFS_HN_20.000"
 comp_090_ffp = data_dir / "2024p950420_MWFS_HN_20.090"
@@ -15,7 +16,7 @@ comp_ver_ffp = data_dir / "2024p950420_MWFS_HN_20.ver"
 dt, waveform = waveform_reading.read_ascii(comp_000_ffp, comp_090_ffp, comp_ver_ffp)
 
 # Calculate the intensity measures using defaults
-im_results = im_calculation.calculate_ims(waveform, dt)
+im_results = im_calculation.calculate_ims(waveform, dt, [IM.PGA, IM.PGV, IM.CAV, IM.AI, IM.Ds575, IM.Ds595, IM.pSA])
 print(im_results)
 
 # Sanity check that the IMs that are calculated are the ones we expect

@@ -5,8 +5,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from IM import ims
-from IM.ims import IM
+from im_calcUC.IM import ims
+from im_calcUC.IM.ims import IM
 
 DEFAULT_PERIODS = np.asarray(
     [
